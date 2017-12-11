@@ -6,9 +6,9 @@ import numpy as np
 
 from collections import defaultdict
 
-from utils.data_management import *
-from evaluation.evaluation_measures import *
-from evaluation.calculate_aggregate_statistics import calculate_aggregate
+from ..utils.data_management import *
+from ..evaluation.evaluation_measures import *
+from ..evaluation.calculate_aggregate_statistics import calculate_aggregate
 
 
 def freedman_diaconis(x):

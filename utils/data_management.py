@@ -36,6 +36,14 @@ def get_item2category(filename, category_level=7):
         item2category[cod_mkt_id] = cod_mkt[:category_level]
     return item2category
 
+def get_item2category_monop(filename, category_level=7, delimiter=";"):
+    df = pd.read_csv(filename, delimiter=delimiter, skipinitialspace=True)
+    item2category = dict()
+    for row in df.values:
+        cod_mkt_id = str(row[0])
+        cod_mkt = str(row[2])
+        item2category[cod_mkt_id] = cod_mkt[:category_level]
+    return item2category
 
 def get_date(basket_id, customer_data):
     basket_data = customer_data['data'][basket_id]
@@ -44,6 +52,50 @@ def get_date(basket_id, customer_data):
         basket_data['ora'], basket_data['minuto'], '0')
     date = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
     return date
+
+
+def get_basket_product_labels(basket, product_label_map) :
+
+    new_basket = list()
+    for item in basket :
+        try:
+            new_basket.append(product_label_map.loc[int(item)]['product_long_label'])
+        except KeyError:
+            new_basket.append(int(item))
+
+    return new_basket
+
+
+def build_monop_customers_data(filename):
+
+    customers_data = dict()
+    data = open(filename, 'r')
+    for row in data:
+
+        customer_data = json.loads(row)
+
+        customer_id = customer_data['customer_id']
+        data_content = customer_data['data']
+
+        new_customer_data = dict()
+        new_customer_data['data'] = dict()
+
+        for basket in data_content :
+            transformed_date = basket['epos2_checkout_date'].replace('-','_') + '_' + basket['epos2_checkout_time'][:5].replace(':','')
+
+            new_customer_data['data'][transformed_date] = dict()
+            new_customer_data['data'][transformed_date]["basket"] = dict()
+
+            for article in basket['articles'] :
+                new_customer_data['data'][transformed_date]["basket"][article["epos2_product_id"]] = [float(article["epos2_product_quantity"]), 1.0]
+
+
+        customers_data[customer_id] = new_customer_data
+
+    data.close()
+
+    return customers_data
+
 
 
 def split_train_test(customers_data, split_mode='loo', min_number_of_basket=10, min_basket_size=1,
@@ -70,12 +122,13 @@ def split_train_test(customers_data, split_mode='loo', min_number_of_basket=10, 
                 basket = customer_data['data'][basket_id]['basket']
                 basket_category = dict()
                 for item in basket:
-                    category = item2category[item]
-                    length = len(basket[item])
-                    if category not in basket_category:
-                        basket_category[category] = [0] * length
-                    for i in xrange(length):
-                        basket_category[category][i] += basket[item][i]
+                    if item in item2category :
+                        category = item2category[item]
+                        length = len(basket[item])
+                        if category not in basket_category:
+                            basket_category[category] = [0] * length
+                        for i in xrange(length):
+                            basket_category[category][i] += basket[item][i]
                 customer_data['data'][basket_id]['basket'] = basket_category
 
         train_set = dict()
@@ -224,4 +277,12 @@ category_index = {
     'categoria': 7,
     'sottocategoria': 9,
     'segmento': 11,
+}
+
+monop_category_index = {
+    'shift': 2,
+    'ug': 4,
+    'category': 7,
+    'subcategory': 10,
+    'ub': 12,
 }

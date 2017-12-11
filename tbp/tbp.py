@@ -1,8 +1,8 @@
-from tars import *
+from .tars import *
 
-from utils.data_management import *
-from evaluation.evaluation_measures import *
-from evaluation.calculate_aggregate_statistics import calculate_aggregate
+from ..utils.data_management import *
+from ..evaluation.evaluation_measures import *
+from ..evaluation.calculate_aggregate_statistics import calculate_aggregate
 
 
 class TBP:
