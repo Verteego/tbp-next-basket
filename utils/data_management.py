@@ -66,18 +66,32 @@ def get_basket_product_labels(basket, product_label_map) :
     return new_basket
 
 
-def build_monop_customers_data(filename):
+def build_monop_customers_data(path, nb_customers, min_nb_baskets):
 
     customers_data = dict()
-    data = open(filename, 'r')
-    for row in data:
+    training_file = path + 'training_data.json'
+
+    training_data = open(training_file, 'r')
+
+    row_counter = 0
+
+    for row in training_data:
 
         customer_data = json.loads(row)
+
+        # only use customers having sufficient receipts over the period
+        if int(customer_data['receipt_count']) < min_nb_baskets :
+            continue
 
         customer_id = customer_data['customer_id']
         data_content = customer_data['data']
 
         new_customer_data = dict()
+
+        new_customer_data['receipt_count'] = customer_data['receipt_count']
+        new_customer_data['first_purchase'] = customer_data['first_purchase']
+        new_customer_data['last_purchase'] = customer_data['last_purchase']
+        new_customer_data['diff_first_last_purchase'] = customer_data['diff_first_last_purchase']
         new_customer_data['data'] = dict()
 
         for basket in data_content :
@@ -92,11 +106,37 @@ def build_monop_customers_data(filename):
 
         customers_data[customer_id] = new_customer_data
 
-    data.close()
+        row_counter += 1
+
+        if nb_customers > 0 and nb_customers <= row_counter :
+            break
+
+    training_data.close()
 
     return customers_data
 
 
+def build_customer_product_quantities(path):
+
+    product_quantities_data = dict()
+    product_quantities_file = path + 'avg_product_quantities.json'
+
+    product_quantities = open(product_quantities_file, 'r')
+
+    for row in product_quantities:
+        customer_data = json.loads(row)
+        customer_id = customer_data['customer_id']
+
+        product_quantities_content = dict()
+
+        for i in customer_data['client_product_data'] :
+            product_quantities_content[i['epos2_product_id']] = i['avg_product_count']
+
+        product_quantities_data[customer_id] = product_quantities_content
+
+    product_quantities.close()
+
+    return product_quantities_data
 
 def split_train_test(customers_data, split_mode='loo', min_number_of_basket=10, min_basket_size=1,
                      max_basket_size=float('inf'), min_item_occurrences=1, item2category=None):
@@ -112,6 +152,7 @@ def split_train_test(customers_data, split_mode='loo', min_number_of_basket=10, 
     customers_test_set = dict()
 
     for customer_id in customers_data:
+
         customer_data = customers_data[customer_id]
 
         if len(customer_data['data']) < min_number_of_basket:
@@ -181,8 +222,8 @@ def split_train_test(customers_data, split_mode='loo', min_number_of_basket=10, 
         if len(train_set) == 0 or len(test_set) == 0:
             continue
 
-        customers_train_set[customer_id] = {'customer_id': customer_id, 'data': train_set}
-        customers_test_set[customer_id] = {'customer_id': customer_id, 'data': test_set}
+        customers_train_set[customer_id] = {'customer_id': customer_id, 'receipt_count':customer_data['receipt_count'], 'last_purchase':customer_data['last_purchase'], 'diff_first_last_purchase':customer_data['diff_first_last_purchase'], 'data': train_set}
+        customers_test_set[customer_id] = {'customer_id': customer_id, 'receipt_count':customer_data['receipt_count'],  'diff_first_last_purchase':customer_data['diff_first_last_purchase'], 'data': test_set}
 
     return customers_train_set, customers_test_set
 
@@ -222,9 +263,14 @@ def remap_items_with_data(baskets):
     new2old = dict()
     old2new = dict()
     new_baskets = dict()
+
     for customer_id in baskets:
-        new_user_baskets = {'customer_id': customer_id, 'data': dict()}
+        new_user_baskets = {'customer_id': customer_id,  'data': dict()}
         user_baskets = baskets[customer_id]
+
+
+        # , 'diff_first_last_purchase':customer_data['diff_first_last_purchase'],
+
         for basket_id in user_baskets['data']:
             basket = user_baskets['data'][basket_id]['basket']
             new_basket = dict()
@@ -237,7 +283,11 @@ def remap_items_with_data(baskets):
 
             new_user_baskets['data'][basket_id] = dict()
             new_user_baskets['data'][basket_id]['basket'] = new_basket
+
         new_baskets[customer_id] = new_user_baskets
+        new_baskets[customer_id]['last_purchase'] = baskets[customer_id]['last_purchase']
+        new_baskets[customer_id]['diff_first_last_purchase'] = baskets[customer_id]['diff_first_last_purchase']
+        new_baskets[customer_id]['receipt_count'] = baskets[customer_id]['receipt_count']
 
     return new_baskets, new2old, old2new
 

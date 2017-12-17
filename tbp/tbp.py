@@ -35,7 +35,7 @@ class TBP:
             raise Exception('Model not built, prediction not available')
 
         if nbr_patterns is not None and nbr_patterns > 0:
-            rs_purchases, rs_day_of_last_purchase = calcualte_active_rp(customer_data, self.rs_intervals_support,
+            rs_purchases, rs_day_of_last_purchase = calculate_active_rp(customer_data, self.rs_intervals_support,
                                                                         day_of_next_purchase)
 
             self.tars = self.tars_tree.mine_patterns(max_rec_dept=1, patterns_subset=rs_purchases,
@@ -43,12 +43,12 @@ class TBP:
                                                      get_items_in_order_of_occurrences=False)
             self.rs_intervals_support = calculate_intervals_support(self.tars, self.tars_tree)
 
-        rs_purchases, rs_day_of_last_purchase = calcualte_active_rp(customer_data, self.rs_intervals_support,
-                                                                        day_of_next_purchase)
+        rs_purchases, rs_day_of_last_purchase = calculate_active_rp(customer_data, self.rs_intervals_support,
+                                                                    day_of_next_purchase)
 
         self.nbr_active_patterns = len(rs_purchases)
 
-        item_score = calcualte_item_score(self.tars_tree, rs_purchases, self.rs_intervals_support)
+        item_score = calculate_item_score(self.tars_tree, rs_purchases, self.rs_intervals_support)
 
         max_nbr_item = min(pred_length, len(item_score))
         pred_basket = sorted(item_score, key=item_score.get, reverse=True)[:max_nbr_item]
