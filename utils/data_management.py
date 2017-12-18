@@ -101,7 +101,7 @@ def build_monop_customers_data(path, nb_customers, min_nb_baskets):
             new_customer_data['data'][transformed_date]["basket"] = dict()
 
             for article in basket['articles'] :
-                new_customer_data['data'][transformed_date]["basket"][article["epos2_product_id"]] = [float(article["epos2_product_quantity"]), 1.0]
+                new_customer_data['data'][transformed_date]["basket"][article["product_ean_code"]] = [float(article["epos2_product_quantity"]), 1.0]
 
 
         customers_data[customer_id] = new_customer_data
@@ -130,7 +130,7 @@ def build_customer_product_quantities(path):
         product_quantities_content = dict()
 
         for i in customer_data['client_product_data'] :
-            product_quantities_content[i['epos2_product_id']] = i['avg_product_count']
+            product_quantities_content[i['product_ean_code']] = i['avg_product_count']
 
         product_quantities_data[customer_id] = product_quantities_content
 
